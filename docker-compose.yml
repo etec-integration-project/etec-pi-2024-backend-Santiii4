@@ -1,0 +1,22 @@
+version: '3'
+services:
+  backend:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    depends_on:
+      - database
+    environment:
+      - NODE_ENV=development
+  database:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: mydb
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
