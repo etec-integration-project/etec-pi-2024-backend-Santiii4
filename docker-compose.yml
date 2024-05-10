@@ -7,3 +7,11 @@ services:
       - MYSQL_DATABASE=ecommerce
     ports:
       - 3307:3306
+  myapp:
+    build: .
+    depends_on:
+      - mysqldb
+    links:
+      - mysqldb
+    ports:
+      - 3000:3000
