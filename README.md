@@ -4,6 +4,7 @@ Paso 1:
 Traer proyecto:
 
 git clone https://github.com/etec-integration-project/etec-pi-2024-backend-Santiii4.git
+
 cd etec-pi-2024-backend-Santiii4
 
 Paso 2:
