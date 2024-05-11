@@ -1,15 +1,18 @@
 Santiago Sanchez
 
 Paso 1:
-Abrir Docker Desktop.
+Traer proyecto:
+
+git clone https://github.com/etec-integration-project/etec-pi-2024-backend-Santiii4.git
+cd etec-pi-2024-backend-Santiii4
+
 Paso 2:
-ingresar en la consola el comando "docker compose up".
+Levantar docker compose:
+
+docker compose up --build
+
 Paso 3:
-Abrir mysql workbench y crear la conexion con los siguientes datos:
--Hostname: localhost
--port: 3307
--user: root
--password: 123456
+Atravez del navegador ingresar a localhost:3000/ping en la barra de busqueda.
 
 
 
