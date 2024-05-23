@@ -18,5 +18,5 @@ Atravez del navegador ingresar a localhost:3000/ping en la barra de busqueda.
 
 
 
-token: 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
+
 
