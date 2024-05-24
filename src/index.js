@@ -19,13 +19,22 @@ const createTables = async () => {
     try {
         const connection = await pool.getConnection();
         await connection.query(`
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            username VARCHAR(255) NOT NULL,
-            email VARCHAR(255) NOT NULL,
-            contraseña VARCHAR(255) NOT NULL
-        );
-    `);
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                contraseña VARCHAR(255) NOT NULL
+            );
+        `);
+
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS products (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                product VARCHAR(255) NOT NULL,
+                quantity INT NOT NULL
+            );
+        `);
+
         console.log("Tables created successfully.");
         connection.release();
     } catch (err) {
@@ -48,4 +57,3 @@ app.get("/ping", async (req, res) => {
 app.listen(3000, () => {
     console.log("Server on port", 3000);
 });
-
