@@ -1,17 +1,27 @@
+version: '3.8'
 services:
   mysqldb:
-    image: mysql
+    image: mysql:5.7
     environment:
-      - MYSQL_ROOT_PASSWORD=123456
-      - MYSQL_DATABASE=ecommerce
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: ecommerce
     ports:
-      - 3307:3306
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--silent"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
       
   myapp:
     build: .
     depends_on:
-      - mysqldb
-    links:
-      - mysqldb
+      mysqldb:
+        condition: service_healthy
+    environment:
+      MYSQLDB_HOST: mysqldb
+      MYSQLDB_ROOT_PASSWORD: 123456
+      MYSQLDB_DOCKER_PORT: 3306
+      MYSQLDB_DATABASE: ecommerce
     ports:
-      - 3000:3000
+      - "3000:3000"
