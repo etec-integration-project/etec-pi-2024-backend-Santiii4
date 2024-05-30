@@ -9,10 +9,10 @@ services:
     ports:
       - "3307:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "--silent"]
-      interval: 10s
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p123456 --silent"]
+      interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 10
     volumes:
       - db_data:/var/lib/mysql
 
