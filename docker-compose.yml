@@ -1,4 +1,5 @@
 version: '3.8'
+
 services:
   mysqldb:
     image: mysql:8.0
@@ -12,6 +13,8 @@ services:
       interval: 10s
       timeout: 10s
       retries: 3
+    volumes:
+      - db_data:/var/lib/mysql
 
   myapp:
     build: .
@@ -25,3 +28,6 @@ services:
       MYSQLDB_DATABASE: ecommerce
     ports:
       - "3000:3000"
+
+volumes:
+  db_data:
