@@ -1,10 +1,13 @@
-import express from "express";
-import { createPool } from "mysql2/promise";
-import { config } from "dotenv";
+import express from 'express';
+import { createPool } from 'mysql2/promise';
+import { config } from 'dotenv';
+import userRoutes from '../routes/user.js';
+import productRoutes from '../routes/products.js';
 
 config();
 
 const app = express();
+app.use(express.json());
 
 const pool = createPool({
     host: process.env.MYSQLDB_HOST,
@@ -19,19 +22,18 @@ const createTables = async () => {
     try {
         const connection = await pool.getConnection();
         await connection.query(`
-            CREATE TABLE IF NOT EXISTS usuarios (
+            CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(255) NOT NULL,
-                email VARCHAR(255) NOT NULL,
-                contraseña VARCHAR(255) NOT NULL
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL
             );
         `);
 
         await connection.query(`
             CREATE TABLE IF NOT EXISTS products (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                product VARCHAR(255) NOT NULL,
-                quantity INT NOT NULL
+                name VARCHAR(255) NOT NULL,
+                price DECIMAL(10, 2) NOT NULL
             );
         `);
 
@@ -45,15 +47,15 @@ const createTables = async () => {
 // Crear tablas al iniciar el servidor
 setTimeout(createTables, 20000); // Esperar 20 segundos antes de intentar crear las tablas
 
-app.get("/", (req, res) => {
-    res.send("Hello World");
-});
+app.use('/users', userRoutes(pool));
+app.use('/products', productRoutes(pool));
 
 app.get("/ping", async (req, res) => {
-    const result = await pool.query('SELECT NOW()');
-    res.json(result[0]);
+    const [result] = await pool.query('SELECT NOW()');
+    res.json(result);
 });
 
 app.listen(3000, () => {
-    console.log("Server on port", 3000);
+    console.log("Server on port 3000");
 });
+
