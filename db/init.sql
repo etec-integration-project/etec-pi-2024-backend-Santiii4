@@ -1,6 +1,3 @@
-CREATE DATABASE IF NOT EXISTS ecommerce;
-USE ecommerce;
-
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -28,7 +25,10 @@ CREATE TABLE IF NOT EXISTS cart_items (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
--- Insertar datos iniciales en la tabla products
 INSERT INTO products (name, description, price, stock) VALUES
 ('24 Pallets', '24 Pallets Description', 199.99, 10),
 ('12 Pallets', '12 Pallets Description', 149.99, 10);
+
+
+
+
