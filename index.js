@@ -2,13 +2,9 @@ import express from 'express';
 import { createPool } from 'mysql2/promise';
 import { config } from 'dotenv';
 import session from 'express-session';
-import passport from 'passport';
-import GoogleStrategy from 'passport-google-oauth20';
-import AppleStrategy from 'passport-apple';
 import userRoutes from '../routes/user.js';
 import productRoutes from '../routes/products.js';
 
-// Cargar variables de entorno desde .env (opcional si estás usando Docker Compose)
 config();
 
 const app = express();
@@ -17,150 +13,104 @@ app.use(express.json());
 // Configuración de la sesión
 app.use(session({ secret: 'your_secret_key', resave: false, saveUninitialized: true }));
 
-// Inicializar passport
-app.use(passport.initialize());
-app.use(passport.session());
-
 // Configuración de la conexión a la base de datos
 const pool = createPool({
-    host: process.env.MYSQLDB_HOST || 'localhost',
-    user: process.env.MYSQLDB_USER || 'root',
-    password: process.env.MYSQLDB_ROOT_PASSWORD || '123456',
-    port: process.env.MYSQLDB_DOCKER_PORT || 3306,
-    database: process.env.MYSQLDB_DATABASE || 'ecommerce'
+    host: process.env.MYSQLDB_HOST,
+    user: 'root',
+    password: process.env.MYSQLDB_ROOT_PASSWORD,
+    port: process.env.MYSQLDB_DOCKER_PORT,
+    database: process.env.MYSQLDB_DATABASE
 });
 
-// Función para crear la base de datos y las tablas
+// Función para inicializar la base de datos y crear las tablas
 const initializeDatabase = async () => {
     try {
+        console.log('Conectando a MySQL...');
+        const connection = await pool.getConnection();
+        console.log('Conexión a MySQL exitosa.');
+
         console.log('Verificando la creación de la base de datos si no existe...');
-        await pool.query(`CREATE DATABASE IF NOT EXISTS ${process.env.MYSQLDB_DATABASE}`);
+        await connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.MYSQLDB_DATABASE}`);
         console.log(`Base de datos ${process.env.MYSQLDB_DATABASE} creada o ya existe.`);
 
-        console.log(`Conectando a la base de datos ${process.env.MYSQLDB_DATABASE}...`);
-        await pool.query(`USE ${process.env.MYSQLDB_DATABASE}`);
+        console.log(`Usando la base de datos ${process.env.MYSQLDB_DATABASE}...`);
+        await connection.query(`USE ${process.env.MYSQLDB_DATABASE}`);
 
-        console.log('Creando la tabla "usuarios" si no existe...');
-        const createUsersTable = `
-            CREATE TABLE IF NOT EXISTS usuarios (
+        console.log('Creando la tabla "users" si no existe...');
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                google_id VARCHAR(255),
-                apple_id VARCHAR(255),
-                name VARCHAR(255) NOT NULL,
-                email VARCHAR(255) NOT NULL,
+                name VARCHAR(100) NOT NULL,
+                email VARCHAR(100) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `;
-        await pool.query(createUsersTable);
-        console.log('Tabla "usuarios" creada o ya existe.');
+            )
+        `);
+        console.log('Tabla "users" creada o ya existe.');
 
-        console.log('Creando la tabla "productos" si no existe...');
-        const createProductsTable = `
-            CREATE TABLE IF NOT EXISTS productos (
+        console.log('Creando la tabla "products" si no existe...');
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS products (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                product_name VARCHAR(255) NOT NULL,
-                price DECIMAL(10, 2) NOT NULL,
+                name VARCHAR(100) NOT NULL,
                 description TEXT,
+                price DECIMAL(10, 2) NOT NULL,
+                stock INT DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `;
-        await pool.query(createProductsTable);
-        console.log('Tabla "productos" creada o ya existe.');
+            )
+        `);
+        console.log('Tabla "products" creada o ya existe.');
+
+        console.log('Creando la tabla "cart_items" si no existe...');
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS cart_items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT,
+                product_id INT,
+                quantity INT NOT NULL DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+            )
+        `);
+        console.log('Tabla "cart_items" creada o ya existe.');
+
+        // Poblar la tabla de productos con datos iniciales si está vacía
+        console.log('Verificando si existen productos en la tabla...');
+        const [rows] = await connection.query('SELECT COUNT(*) AS count FROM products');
+        if (rows[0].count === 0) {
+            console.log('Tabla "products" está vacía. Insertando datos iniciales...');
+            await connection.query(`
+                INSERT INTO products (name, description, price, stock) VALUES
+                ('24 Pallets', '24 Pallets Description', 199.99, 10),
+                ('12 Pallets', '12 Pallets Description', 149.99, 10)
+            `);
+            console.log('Productos iniciales añadidos.');
+        } else {
+            console.log('Productos ya existentes en la base de datos.');
+        }
 
         console.log('Configuración de la base de datos y las tablas completada.');
+        connection.release();  // Liberar la conexión
     } catch (error) {
         console.error('Error al inicializar la base de datos:', error.message);
+        process.exit(1);  // Salir si hay un error en la inicialización de la base de datos
     }
 };
 
+
 // Llamada a la función para inicializar la base de datos y las tablas
-initializeDatabase();
+initializeDatabase().then(() => {
+    // Una vez que la base de datos está lista, iniciar el servidor
+    app.use('/users', userRoutes(pool));
+    app.use('/products', productRoutes(pool));
 
-// Configuración de passport con Google
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: 'http://localhost:5000/auth/google/callback'
-}, async (accessToken, refreshToken, profile, done) => {
-    try {
-        const [rows] = await pool.query('SELECT * FROM usuarios WHERE google_id = ?', [profile.id]);
-        if (rows.length > 0) {
-            return done(null, rows[0]);
-        } else {
-            const result = await pool.query('INSERT INTO usuarios (google_id, name, email) VALUES (?, ?, ?)', [profile.id, profile.displayName, profile.emails[0].value]);
-            return done(null, { id: result.insertId, name: profile.displayName, email: profile.emails[0].value });
-        }
-    } catch (error) {
-        console.error('Error durante el inicio de sesión con Google:', error);
-        return done(error, null);
-    }
-}));
-
-// Configuración de passport con Apple
-passport.use(new AppleStrategy({
-    clientID: process.env.APPLE_CLIENT_ID,
-    teamID: process.env.APPLE_TEAM_ID,
-    keyID: process.env.APPLE_KEY_ID,
-    key: process.env.APPLE_PRIVATE_KEY,
-    callbackURL: 'http://localhost:5000/auth/apple/callback',
-    passReqToCallback: false
-}, async (accessToken, refreshToken, idToken, profile, done) => {
-    try {
-        const [rows] = await pool.query('SELECT * FROM usuarios WHERE apple_id = ?', [profile.id]);
-        if (rows.length > 0) {
-            return done(null, rows[0]);
-        } else {
-            const result = await pool.query('INSERT INTO usuarios (apple_id, name, email) VALUES (?, ?, ?)', [profile.id, profile.name, profile.email]);
-            return done(null, { id: result.insertId, name: profile.name, email: profile.email });
-        }
-    } catch (error) {
-        console.error('Error durante el inicio de sesión con Apple:', error);
-        return done(error, null);
-    }
-}));
-
-// Serialización y deserialización de usuario
-passport.serializeUser((user, done) => {
-    done(null, user.id);
+    app.listen(5000, () => {
+        console.log('Servidor corriendo en http://localhost:5000');
+    });
 });
 
-passport.deserializeUser(async (id, done) => {
-    try {
-        const [rows] = await pool.query('SELECT * FROM usuarios WHERE id = ?', [id]);
-        done(null, rows[0]);
-    } catch (error) {
-        done(error, null);
-    }
-});
 
-// Rutas de autenticación de Google
-app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-
-app.get('/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/login' }),
-    (req, res) => {
-        res.redirect('/home');
-    }
-);
-
-// Rutas de autenticación de Apple
-app.get('/auth/apple', passport.authenticate('apple'));
-
-app.post('/auth/apple/callback',
-    passport.authenticate('apple', { failureRedirect: '/login' }),
-    (req, res) => {
-        res.redirect('/home');
-    }
-);
-
-// Otras rutas ya existentes
-app.use('/users', userRoutes(pool));
-app.use('/products', productRoutes(pool));
-
-// Iniciar el servidor
-app.listen(5000, () => {
-    console.log('Servidor corriendo en http://localhost:5000');
-});
 
 
 
