@@ -3,9 +3,18 @@ import session from 'express-session';
 import pool from './config/database.js'; // Configuración de la base de datos
 import userRoutes from './routes/user.js';
 import productRoutes from './routes/products.js';
+import cartRoutes from './routes/cart.js'; // Importar las rutas del carrito
+import cors from 'cors'; // Importamos CORS
 
 const app = express();
 app.use(express.json());
+
+// Configuración de CORS para permitir solicitudes desde el frontend en localhost:3000
+app.use(cors({
+    origin: 'http://localhost:3000', // Cambia esto si tu frontend corre en otra URL
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true // Si necesitas enviar cookies o sesiones
+}));
 
 // Configuración de la sesión
 app.use(session({
@@ -21,7 +30,6 @@ const initializeDatabase = async () => {
 
     // Consulta SQL directamente en el código
     const sql = `
-    
         CREATE TABLE IF NOT EXISTS users (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
@@ -76,11 +84,14 @@ const initializeDatabase = async () => {
 initializeDatabase().then(() => {
     app.use('/users', userRoutes(pool));
     app.use('/products', productRoutes(pool));
+    app.use('/cart', cartRoutes(pool)); // Agregar las rutas del carrito
 
     app.listen(5000, () => {
         console.log('Servidor corriendo en http://localhost:5000');
     });
 });
+
+
 
 
 

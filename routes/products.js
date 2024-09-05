@@ -1,79 +1,66 @@
 import { Router } from 'express';
 
 const router = Router();
-let cart = []; // Almacenamiento temporal del carrito
 
 export default (pool) => {
   // Obtener todos los productos
   router.get("/", async (req, res) => {
-    const [rows] = await pool.query('SELECT * FROM products');
-    res.json(rows);
+    try {
+      const [rows] = await pool.query('SELECT * FROM products');
+      res.json(rows);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener los productos" });
+    }
   });
 
   // Crear un nuevo producto
   router.post("/", async (req, res) => {
     const { name, price } = req.body;
-    const result = await pool.query('INSERT INTO products (name, price) VALUES (?, ?)', [name, price]);
-    res.json({ id: result.insertId, name, price });
+    try {
+      const result = await pool.query('INSERT INTO products (name, price) VALUES (?, ?)', [name, price]);
+      res.json({ id: result.insertId, name, price });
+    } catch (error) {
+      res.status(500).json({ message: "Error al crear el producto" });
+    }
   });
 
   // Obtener un producto por ID
   router.get("/:id", async (req, res) => {
-    const [rows] = await pool.query('SELECT * FROM products WHERE id = ?', [req.params.id]);
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "Product not found" });
+    try {
+      const [rows] = await pool.query('SELECT * FROM products WHERE id = ?', [req.params.id]);
+      if (rows.length === 0) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+      res.json(rows[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener el producto" });
     }
-    res.json(rows[0]);
   });
 
   // Actualizar un producto por ID
   router.put("/:id", async (req, res) => {
     const { name, price } = req.body;
-    await pool.query('UPDATE products SET name = ?, price = ? WHERE id = ?', [name, price, req.params.id]);
-    res.json({ message: "Product updated" });
+    try {
+      await pool.query('UPDATE products SET name = ?, price = ? WHERE id = ?', [name, price, req.params.id]);
+      res.json({ message: "Producto actualizado" });
+    } catch (error) {
+      res.status(500).json({ message: "Error al actualizar el producto" });
+    }
   });
 
   // Eliminar un producto por ID
   router.delete("/:id", async (req, res) => {
-    await pool.query('DELETE FROM products WHERE id = ?', [req.params.id]);
-    res.json({ message: "Product deleted" });
-  });
-
-  // ===============================
-  // Funcionalidad del Carrito
-  // ===============================
-
-  // Obtener el contenido del carrito
-  router.get('/cart', (req, res) => {
-    res.json(cart);
-  });
-
-  // Agregar un producto al carrito
-  router.post('/cart/add', (req, res) => {
-    const { id, quantity } = req.body;
-    const existingProduct = cart.find(item => item.id === id);
-    if (existingProduct) {
-      existingProduct.quantity += quantity;
-    } else {
-      cart.push({ id, quantity });
+    try {
+      await pool.query('DELETE FROM products WHERE id = ?', [req.params.id]);
+      res.json({ message: "Producto eliminado" });
+    } catch (error) {
+      res.status(500).json({ message: "Error al eliminar el producto" });
     }
-    res.json(cart);
-  });
-
-  // Actualizar la cantidad de un producto en el carrito
-  router.put('/cart/update', (req, res) => {
-    const { id, quantity } = req.body;
-    cart = cart.map(item => item.id === id ? { ...item, quantity } : item);
-    res.json(cart);
-  });
-
-  // Eliminar un producto del carrito
-  router.delete('/cart/remove/:id', (req, res) => {
-    const { id } = req.params;
-    cart = cart.filter(item => item.id !== parseInt(id));
-    res.json(cart);
   });
 
   return router;
-}
+};
+
+
+
 
