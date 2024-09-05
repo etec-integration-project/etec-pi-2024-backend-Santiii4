@@ -8,8 +8,10 @@ const pool = createPool({
     user: 'root',
     password: process.env.MYSQLDB_ROOT_PASSWORD,
     port: process.env.MYSQLDB_DOCKER_PORT,
-    database: process.env.MYSQLDB_DATABASE
+    database: process.env.MYSQLDB_DATABASE,
+    multipleStatements: true // Habilitar múltiples declaraciones
 });
 
 export default pool;
+
 
