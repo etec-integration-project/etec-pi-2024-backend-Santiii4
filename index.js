@@ -1,10 +1,11 @@
 import express from 'express';
 import session from 'express-session';
-import pool from './config/database.js'; // Configuración de la base de datos
-import userRoutes from './routes/user.js';
-import productRoutes from './routes/products.js';
+import pool from './config/database.js'; // Configuración de la base de datos (para SQL directo)
+import userRoutes from './routes/user.js'; // Sin pool
+import productRoutes from './routes/products.js'; // Si estos usan pool, lo mantenemos
 import cartRoutes from './routes/cart.js'; // Importar las rutas del carrito
 import cors from 'cors'; // Importamos CORS
+import sequelize from './config/db.js'; // Importar Sequelize
 
 const app = express();
 app.use(express.json());
@@ -23,12 +24,22 @@ app.use(session({
     saveUninitialized: true
 }));
 
-// Función para inicializar la base de datos y crear las tablas
+// Función para inicializar la base de datos con Sequelize y crear las tablas usando SQL directo (pool)
 const initializeDatabase = async () => {
-    const maxRetries = 2; // Reducido a 2 intentos
+    const maxRetries = 2;
     let retries = 0;
 
-    // Consulta SQL directamente en el código
+    // Sincronizar los modelos con la base de datos usando Sequelize
+    try {
+        await sequelize.authenticate();
+        console.log('Conexión a la base de datos establecida correctamente con Sequelize.');
+        await sequelize.sync({ force: false }); // Sincroniza los modelos sin eliminar las tablas
+        console.log('Modelos sincronizados con Sequelize.');
+    } catch (error) {
+        console.error('Error al sincronizar los modelos con Sequelize:', error);
+    }
+
+    // Consulta SQL directamente en el código (utilizando pool)
     const sql = `
         CREATE TABLE IF NOT EXISTS users (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -64,14 +75,14 @@ const initializeDatabase = async () => {
 
     while (retries < maxRetries) {
         try {
-            await pool.query(sql);
-            console.log('Base de datos y tablas inicializadas.');
+            await pool.query(sql); // Utiliza pool para las consultas directas
+            console.log('Base de datos y tablas inicializadas (con pool).');
             break; // Sale del bucle si la conexión es exitosa
         } catch (error) {
             retries += 1;
             console.error(`Error al inicializar la base de datos (intento ${retries}/${maxRetries}):`, error.message);
             if (retries < maxRetries) {
-                console.log('Reintentando conexión en 3 segundos...'); 
+                console.log('Reintentando conexión en 3 segundos...');
                 await new Promise(res => setTimeout(res, 3000));
             } else {
                 process.exit(1); // Sale si alcanzó el número máximo de reintentos
@@ -82,14 +93,19 @@ const initializeDatabase = async () => {
 
 // Inicializar la base de datos y luego iniciar el servidor
 initializeDatabase().then(() => {
-    app.use('/users', userRoutes(pool));
+    // No pasar 'pool' a userRoutes ya que no lo necesita
+    app.use('/users', userRoutes); 
+
+    // Si 'productRoutes' y 'cartRoutes' necesitan 'pool', mantenemos esto
     app.use('/products', productRoutes(pool));
-    app.use('/cart', cartRoutes(pool)); // Agregar las rutas del carrito
+    app.use('/cart', cartRoutes(pool)); 
 
     app.listen(5000, () => {
         console.log('Servidor corriendo en http://localhost:5000');
     });
 });
+
+
 
 
 
