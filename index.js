@@ -41,37 +41,54 @@ const initializeDatabase = async () => {
 
     // Consulta SQL directamente en el código (utilizando pool)
     const sql = `
-        CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            email VARCHAR(100) NOT NULL UNIQUE,
-            password VARCHAR(255) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
+    -- Eliminar tablas existentes si ya existen
+    DROP TABLE IF EXISTS cart_items;
+    DROP TABLE IF EXISTS products;
+    DROP TABLE IF EXISTS users;
 
-        CREATE TABLE IF NOT EXISTS products (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            description TEXT,
-            price DECIMAL(10, 2) NOT NULL,
-            stock INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
+    -- Crear las tablas de nuevo
+    CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
 
-        CREATE TABLE IF NOT EXISTS cart_items (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT,
-            product_id INT,
-            quantity INT NOT NULL DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-        );
+    CREATE TABLE IF NOT EXISTS products (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        price DECIMAL(10, 2) NOT NULL,
+        stock INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
 
-        INSERT INTO products (name, description, price, stock) VALUES
-        ('24 Pallets', '24 Pallets Description', 199.99, 10),
-        ('12 Pallets', '12 Pallets Description', 149.99, 10);
-    `;
+    CREATE TABLE IF NOT EXISTS cart_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        product_id INT,
+        quantity INT NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    );
+
+    -- Solo inserta productos si no existen
+    INSERT INTO products (name, description, price, stock)
+    SELECT * FROM (SELECT '24 Pallets', '24 Pallets Description', 199.99, 10) AS tmp
+    WHERE NOT EXISTS (
+        SELECT name FROM products WHERE name = '24 Pallets'
+    ) LIMIT 1;
+
+    INSERT INTO products (name, description, price, stock)
+    SELECT * FROM (SELECT '12 Pallets', '12 Pallets Description', 149.99, 10) AS tmp
+    WHERE NOT EXISTS (
+        SELECT name FROM products WHERE name = '12 Pallets'
+    ) LIMIT 1;
+`;
+
+
 
     while (retries < maxRetries) {
         try {

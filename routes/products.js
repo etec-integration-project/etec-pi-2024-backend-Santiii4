@@ -13,10 +13,17 @@ export default (pool) => {
     }
   });
 
-  // Crear un nuevo producto
+  // Crear un nuevo producto con verificación de existencia
   router.post("/", async (req, res) => {
     const { name, price } = req.body;
     try {
+      // Verificar si el producto ya existe
+      const [existingProduct] = await pool.query('SELECT * FROM products WHERE name = ?', [name]);
+      if (existingProduct.length > 0) {
+        return res.status(400).json({ message: "El producto ya existe" });
+      }
+
+      // Si no existe, crear el producto
       const result = await pool.query('INSERT INTO products (name, price) VALUES (?, ?)', [name, price]);
       res.json({ id: result.insertId, name, price });
     } catch (error) {
@@ -60,6 +67,7 @@ export default (pool) => {
 
   return router;
 };
+
 
 
 
