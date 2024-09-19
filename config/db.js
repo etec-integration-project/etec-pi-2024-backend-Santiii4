@@ -2,12 +2,18 @@
 import { Sequelize } from 'sequelize';
 
 // Configuración correcta de la base de datos
-const sequelize = new Sequelize('ecommerce', 'root', '123456', {
-    host: 'mysqldb',  // Usa el nombre del servicio definido en docker-compose
-    dialect: 'mysql',
-    logging: false,
-});
+const sequelize = new Sequelize(
+    process.env.MYSQLDB_DATABASE || 'ecommerce',
+    process.env.MYSQLDB_USER || 'root',
+    process.env.MYSQLDB_ROOT_PASSWORD || '123456',
+    {
+        host: process.env.MYSQLDB_HOST || 'database',  // Usar la variable de entorno correcta
+        dialect: 'mysql',
+        logging: false,
+    }
+);
 
 export default sequelize;
+
 
 
