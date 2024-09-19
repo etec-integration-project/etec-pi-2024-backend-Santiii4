@@ -23,7 +23,8 @@ export const registerUser = async (req, res) => {
 
         res.json({ token });
     } catch (error) {
-        res.status(500).json({ msg: 'Error al registrar usuario' });
+        console.error('Error en el registro de usuario:', error);  // Agrega detalles del error en los logs
+        res.status(500).json({ msg: 'Error al registrar usuario', error: error.message });  // Devuelve el mensaje de error
     }
 };
 
@@ -43,6 +44,8 @@ export const loginUser = async (req, res) => {
 
         res.json({ token });
     } catch (error) {
-        res.status(500).json({ msg: 'Error en el inicio de sesión' });
+        console.error('Error en el inicio de sesión:', error);  // Agrega detalles del error en los logs
+        res.status(500).json({ msg: 'Error en el inicio de sesión', error: error.message });  // Devuelve el mensaje de error
     }
 };
+
