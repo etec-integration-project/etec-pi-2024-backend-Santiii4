@@ -1,4 +1,3 @@
-// models/User.js
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js'; // Asumiendo que tienes un archivo de configuración de la base de datos
 
@@ -16,6 +15,10 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: false
     }
+}, {
+    tableName: 'Users',  // Forzar el uso de la tabla 'Users' con mayúscula inicial
+    timestamps: false    // Si no estás usando createdAt y updatedAt, puedes deshabilitar timestamps
 });
 
 export default User;
+
