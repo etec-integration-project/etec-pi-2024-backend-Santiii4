@@ -10,9 +10,9 @@ import sequelize from './config/db.js'; // Importar Sequelize
 const app = express();
 app.use(express.json());
 
-// Configuración de CORS para permitir solicitudes desde el frontend en localhost:3000
+// Configuración de CORS para permitir solicitudes desde cualquier origen (para producción)
 app.use(cors({
-    origin: 'http://localhost:3000', // Cambia esto si tu frontend corre en otra URL
+    origin: '*',  // Permitir cualquier origen
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true // Si necesitas enviar cookies o sesiones
 }));
@@ -44,33 +44,22 @@ const initializeDatabase = async () => {
     -- Eliminar tablas existentes si ya existen
     DROP TABLE IF EXISTS cart_items;
     DROP TABLE IF EXISTS products;
-    DROP TABLE IF EXISTS users;
+    DROP TABLE IF EXISTS orders;
 
-    -- Crear las tablas de nuevo
-    CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
-        email VARCHAR(100) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS products (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
+    -- Crear la tabla de productos
+    CREATE TABLE products (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        name VARCHAR(255),
         description TEXT,
-        price DECIMAL(10, 2) NOT NULL,
-        stock INT DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        price DECIMAL(10, 2),
+        stock INT
     );
 
-    CREATE TABLE IF NOT EXISTS cart_items (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT,
+    -- Crear la tabla del carrito
+    CREATE TABLE cart_items (
+        id INT PRIMARY KEY AUTO_INCREMENT,
         product_id INT,
-        quantity INT NOT NULL DEFAULT 1,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        quantity INT,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
     );
 
@@ -87,8 +76,6 @@ const initializeDatabase = async () => {
         SELECT name FROM products WHERE name = '12 Pallets'
     ) LIMIT 1;
 `;
-
-
 
     while (retries < maxRetries) {
         try {
@@ -117,10 +104,11 @@ initializeDatabase().then(() => {
     app.use('/products', productRoutes(pool));
     app.use('/cart', cartRoutes(pool)); 
 
-    app.listen(5000, () => {
-        console.log('Servidor corriendo en http://localhost:5000');
+    app.listen(5000, '0.0.0.0', () => {
+        console.log('Servidor corriendo en http://0.0.0.0:5000');
     });
 });
+
 
 
 
