@@ -1,14 +1,15 @@
 import { Router } from 'express';
 
-const router = Router();
-let cart = []; // Almacenamiento temporal del carrito
-
 export default (pool) => {
+  const router = Router(); // Crear el router dentro de la función exportada
+  let cart = []; // Almacenamiento temporal del carrito
+
   // Obtener el contenido del carrito
   router.get('/', (req, res) => {
     res.json(cart);
   });
 
+  // Agregar un producto al carrito
   router.post('/add', async (req, res) => {
     const { id, quantity } = req.body;
     if (quantity <= 0) {
@@ -47,8 +48,8 @@ export default (pool) => {
 
   // Eliminar un producto del carrito
   router.delete('/remove/:id', (req, res) => {
-    const { id } = req.params;
-    cart = cart.filter(item => item.id !== parseInt(id));
+    const id = parseInt(req.params.id, 10);
+    cart = cart.filter(item => item.id !== id);
     res.json(cart);
   });
 
@@ -90,5 +91,3 @@ export default (pool) => {
 
   return router;
 };
-
-

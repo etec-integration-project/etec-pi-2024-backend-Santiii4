@@ -1,10 +1,10 @@
 import { Router } from 'express';
 
-const router = Router();
-
 export default (pool) => {
+  const router = Router(); // Mover la creación del router dentro de la función
+
   // Obtener todos los productos
-  router.get("/", async (req, res) => {
+  router.get("/", async (req, res) => {  // Cambié "/products" a "/"
     try {
       const [rows] = await pool.query('SELECT * FROM products');
       res.json(rows);
@@ -24,7 +24,7 @@ export default (pool) => {
       }
 
       // Si no existe, crear el producto
-      const result = await pool.query('INSERT INTO products (name, price) VALUES (?, ?)', [name, price]);
+      const [result] = await pool.query('INSERT INTO products (name, price) VALUES (?, ?)', [name, price]);
       res.json({ id: result.insertId, name, price });
     } catch (error) {
       res.status(500).json({ message: "Error al crear el producto" });
@@ -67,8 +67,3 @@ export default (pool) => {
 
   return router;
 };
-
-
-
-
-
