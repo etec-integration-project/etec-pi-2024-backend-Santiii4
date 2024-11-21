@@ -29,9 +29,9 @@ app.get('/', (req, res) => {
   res.send('Bienvenido a la API');
 });
 
-app.use('/users', userRoutes);
-app.use('/products', productRoutes(pool));
-app.use('/cart', cartRoutes(pool));
+app.use('/api/users', userRoutes);
+app.use('/api/products', productRoutes(pool));
+app.use('/api/cart', cartRoutes(pool));
 
 
 const port = 8000;
