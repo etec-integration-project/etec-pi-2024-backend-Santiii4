@@ -1,4 +1,5 @@
 import express from 'express';
+import contactRoutes from './routes/contact.js';
 import session from 'express-session';
 import cors from 'cors';
 import { createDatabases, createTables, pool } from './config/database.js'; // Asegúrate de exportar 'pool' en database.js
@@ -32,6 +33,7 @@ app.get('/', (req, res) => {
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes(pool));
 app.use('/api/cart', cartRoutes(pool));
+app.use('/api', contactRoutes);
 
 
 const port = 8000;
