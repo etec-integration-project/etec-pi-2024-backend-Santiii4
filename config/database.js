@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 
 config(); // Cargar variables de entorno
 
-export const  pool = createPool({
+export const pool = createPool({
     host: process.env.MYSQLDB_HOST,
     user: 'root',
     password: process.env.MYSQLDB_ROOT_PASSWORD,
@@ -11,9 +11,6 @@ export const  pool = createPool({
     database: process.env.MYSQLDB_DATABASE,
     multipleStatements: true // Habilitar múltiples declaraciones
 });
-
-
-
 
 export const createDatabases = async () => {
     try {
@@ -29,8 +26,7 @@ export const createDatabases = async () => {
     } catch (err) {
         console.error("Error creating Databases:", err);
     }
-  };
-
+};
 
 export const createTables = async () => {
     try {
@@ -51,15 +47,15 @@ export const createTables = async () => {
                 description TEXT,
                 price DECIMAL(10, 2),
                 stock INT          
-                                  
           );
-      `);
+        `);
         await connection.query(`
-            CREATE TABLE cart_items (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            product_id INT,
-            quantity INT,
-            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+            CREATE TABLE IF NOT EXISTS cart_items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                cart_id VARCHAR(255) NOT NULL, -- Identificador único del carrito
+                product_id INT NOT NULL,
+                quantity INT NOT NULL,
+                FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
             );
         `);
         await connection.query(`
@@ -74,11 +70,10 @@ export const createTables = async () => {
                 SELECT name FROM products WHERE name = '12 Pallets'
             ) LIMIT 1;
         `);
-      
   
         console.log("Tables created successfully.");
         connection.release();
     } catch (err) {
         console.error("Error creating tables:", err);
     }
-  };
+};
