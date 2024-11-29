@@ -1,0 +1,42 @@
+services:
+  mysqldb:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: ecommerce
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p123456 --silent"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  myapp:
+    build: .
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+    environment:
+      MYSQLDB_HOST: mysqldb
+      MYSQLDB_ROOT_PASSWORD: 123456
+      MYSQLDB_DOCKER_PORT: 3306
+      MYSQLDB_DATABASE: ecommerce
+    networks:
+      - app-network
+    ports:
+      - "8000:8000"
+
+volumes:
+  db_data:
+
+networks:
+  app-network:
+    driver: bridge
+
+
+
